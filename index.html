@@ -2,151 +2,118 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>ระบบคะแนน - คณิตศาสตร์ทั่วไป</title>
+  <title>ระบบผลการเรียน - คณิตศาสตร์ทั่วไป</title>
   <style>
-    body { font-family: "Segoe UI", sans-serif; background: #f5f7fa; margin: 0; }
-    header { background: #2c3e50; color: white; padding: 1rem; text-align: center; }
-    .container { max-width: 800px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
-    h2 { color: #2c3e50; }
-    input, button { padding: 0.5rem; margin: 0.5rem 0; width: 100%; border-radius: 8px; border: 1px solid #ccc; }
-    button { background: #3498db; color: white; border: none; cursor: pointer; transition: 0.3s; }
-    button:hover { background: #2980b9; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: center; }
-    th { background: #3498db; color: white; }
-    .hidden { display: none; }
+    body {
+      font-family: "Sarabun", sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e3a8a;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .container {
+      max-width: 400px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    h2 {
+      margin-top: 0;
+      color: #1e3a8a;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #2563eb;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .error {
+      color: red;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>ระบบผลการเรียน - คณิตศาสตร์ทั่วไป</h1>
+    ระบบผลการเรียน - คณิตศาสตร์ทั่วไป
   </header>
-
-  <div class="container" id="loginPage">
+  <div class="container">
     <h2>เข้าสู่ระบบ</h2>
-    <input type="file" id="userFile" accept=".csv">
-    <input type="text" id="loginUser" placeholder="รหัสผู้ใช้">
-    <input type="password" id="loginPass" placeholder="รหัสผ่าน">
+    <input type="text" id="userId" placeholder="รหัสผู้ใช้/รหัสนักศึกษา">
+    <input type="password" id="password" placeholder="รหัสผ่าน">
     <button onclick="login()">เข้าสู่ระบบ</button>
-    <p id="loginMsg" style="color:red;"></p>
+    <div class="error" id="errorMsg"></div>
   </div>
 
-  <div class="container hidden" id="adminPage">
-    <h2>ยินดีต้อนรับ อาจารย์</h2>
-    <input type="file" id="scoreFile" accept=".csv">
-    <button onclick="importCSV()">Import CSV คะแนน</button>
-    <button onclick="exportCSV()">Export CSV คะแนน</button>
-    <table id="scoreTable"></table>
-    <button onclick="logout()">ออกจากระบบ</button>
-  </div>
+  <script>
+    let usersData = [];
 
-  <div class="container hidden" id="studentPage">
-    <h2>ผลการเรียนของคุณ</h2>
-    <table id="studentTable"></table>
-    <button onclick="logout()">ออกจากระบบ</button>
-  </div>
+    // โหลด users.csv อัตโนมัติจาก repo
+    async function loadUsers() {
+      try {
+        const response = await fetch('users.csv');
+        const text = await response.text();
 
-<script>
-let users = [];
-let scores = [];
-let currentUser = null;
-
-function login(){
-  let uid = document.getElementById("loginUser").value.trim();
-  let pw = document.getElementById("loginPass").value.trim();
-  if(users.length === 0){
-    document.getElementById("loginMsg").innerText = "กรุณาเลือกไฟล์ users.csv ก่อน";
-    return;
-  }
-  let user = users.find(u => u.userId === uid && u.password === pw);
-  if(user){
-    currentUser = user;
-    document.getElementById("loginPage").classList.add("hidden");
-    if(user.role === "admin"){
-      document.getElementById("adminPage").classList.remove("hidden");
-    } else {
-      document.getElementById("studentPage").classList.remove("hidden");
-      showStudentScores(uid);
+        const rows = text.trim().split('\\n').map(r => r.split(','));
+        const headers = rows[0];
+        usersData = rows.slice(1).map(row => {
+          let obj = {};
+          row.forEach((val, i) => obj[headers[i]] = val);
+          return obj;
+        });
+      } catch (err) {
+        document.getElementById('errorMsg').innerText = "ไม่สามารถโหลด users.csv ได้";
+      }
     }
-  } else {
-    document.getElementById("loginMsg").innerText = "รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
-  }
-}
 
-function logout(){
-  currentUser = null;
-  document.getElementById("adminPage").classList.add("hidden");
-  document.getElementById("studentPage").classList.add("hidden");
-  document.getElementById("loginPage").classList.remove("hidden");
-}
+    // ตรวจสอบการ login
+    function login() {
+      const userId = document.getElementById("userId").value.trim();
+      const password = document.getElementById("password").value.trim();
 
-document.getElementById("userFile").addEventListener("change", e=>{
-  let file = e.target.files[0];
-  if(!file) return;
-  let reader = new FileReader();
-  reader.onload = function(evt){
-    let lines = evt.target.result.split("\n").map(l=>l.trim()).filter(l=>l.length>0);
-    users = lines.slice(1).map(line=>{
-      let parts = line.split(",");
-      return {userId:parts[0], password:parts[1], role:parts[2], name:parts[3]};
-    });
-  };
-  reader.readAsText(file,"utf-8");
-});
+      const user = usersData.find(u => u.userId === userId && u.password === password);
 
-function importCSV(){
-  let file = document.getElementById("scoreFile").files[0];
-  if(!file) return alert("กรุณาเลือกไฟล์คะแนนก่อน");
-  let reader = new FileReader();
-  reader.onload = function(evt){
-    let lines = evt.target.result.split("\n").map(l=>l.trim()).filter(l=>l.length>0);
-    scores = lines.slice(1).map(line=>{
-      let parts = line.split(",");
-      return {userId:parts[0], name:parts[1], mid:parts[2], final:parts[3], total:parts[4]};
-    });
-    showAdminScores();
-  };
-  reader.readAsText(file,"utf-8");
-}
+      if (!user) {
+        document.getElementById("errorMsg").innerText = "รหัสผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+        return;
+      }
 
-function showAdminScores(){
-  let html = "<tr><th>รหัสนักศึกษา</th><th>ชื่อ</th><th>กลางภาค</th><th>ปลายภาค</th><th>รวม</th></tr>";
-  scores.forEach((s,i)=>{
-    html += `<tr>
-      <td>${s.userId}</td>
-      <td>${s.name}</td>
-      <td contenteditable="true">${s.mid}</td>
-      <td contenteditable="true">${s.final}</td>
-      <td contenteditable="true">${s.total}</td>
-    </tr>`;
-  });
-  document.getElementById("scoreTable").innerHTML = html;
-}
+      if (user.role === "admin") {
+        window.location.href = "admin.html"; // อาจารย์ไปหน้า admin
+      } else {
+        // เก็บ userId ใน localStorage เพื่อใช้ใน student.html
+        localStorage.setItem("currentUserId", userId);
+        window.location.href = "student.html";
+      }
+    }
 
-function showStudentScores(uid){
-  let s = scores.find(sc=>sc.userId===uid);
-  if(!s){ document.getElementById("studentTable").innerHTML = "<tr><td>ไม่พบข้อมูลคะแนน</td></tr>"; return; }
-  let html = "<tr><th>รายวิชา</th><th>กลางภาค</th><th>ปลายภาค</th><th>รวม</th></tr>";
-  html += `<tr><td>คณิตศาสตร์ทั่วไป</td><td>${s.mid}</td><td>${s.final}</td><td>${s.total}</td></tr>`;
-  document.getElementById("studentTable").innerHTML = html;
-}
-
-function exportCSV(){
-  let rows = ["userId,ชื่อ-นามสกุล,กลางภาค,ปลายภาค,รวม"];
-  let trs = document.querySelectorAll("#scoreTable tr");
-  trs.forEach((tr,i)=>{
-    if(i===0) return;
-    let tds = tr.querySelectorAll("td");
-    let row = [];
-    tds.forEach(td=>row.push(td.innerText));
-    rows.push(row.join(","));
-  });
-  let blob = new Blob([rows.join("\n")], {type:"text/csv;charset=utf-8;"});
-  let link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "scores.csv";
-  link.click();
-}
-</script>
+    // โหลด users.csv ตอนเปิดหน้า
+    loadUsers();
+  </script>
 </body>
 </html>
